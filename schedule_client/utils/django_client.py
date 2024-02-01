@@ -43,7 +43,7 @@ class PostClient():
             if last_scheduled_post:
                 reference_time = last_scheduled_post.scheduled_post_time + self.interval
             else:
-                reference_time = timezone.now() + timedelta(minutes=2)
+                reference_time = timezone.now() + timedelta(minutes=1)
 
             # Loop through all unscheduled posts
             for unscheduled_post in unscheduled_posts:
@@ -54,6 +54,7 @@ class PostClient():
 
                 # Update reference time to scheduled time used
                 reference_time += self.interval
+
 
     def get_scheduled_posts(self) -> list[PostObject]:
         """Collect all unscheduled posts within the SCHEDULER_INTERVAL before and after timezone.now().
@@ -80,14 +81,17 @@ class PostClient():
                 for i in range(len(images))
             ]
 
-            is_link_card = len(links) == 1 and post.link_card_title != "" and post.link_card_description != ""
+            link_card_title = post.link_card_title if post.link_card_title else ""
+            link_card_description = post.link_card_description if post.link_card_description else ""
+
+            is_link_card = len(links) == 1 and link_card_title != "" and link_card_description != ""
 
             post_object = PostObject(
                 id=post.id,
                 text=post.text,
                 links=links,
-                link_card_title=post.link_card_title,
-                link_card_description=post.link_card_description,
+                link_card_title=link_card_title,
+                link_card_description=link_card_description,
                 is_link_card=is_link_card,
                 image_urls_with_alts=image_urls_with_alts,
             )
@@ -101,6 +105,7 @@ class PostClient():
         
         return post_objects
     
+
     def set_post_as_draft(self, post_id: int) -> None:
         """Set a post as a draft. Used in the event of an error posting to Bluesky
 
@@ -113,7 +118,8 @@ class PostClient():
             post_to_draft.save()
         except:
             raise
-    
+
+
     def set_as_posted(self, post_id: int, cid: str, uri: str) -> None:
         """Set a post as published and record relevant data
 
