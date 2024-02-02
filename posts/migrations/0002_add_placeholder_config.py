@@ -6,20 +6,20 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     def create_default_config(apps, schema_editor):
-        Config = apps.get_model('posts', 'Config')
+        Config = apps.get_model("posts", "Config")
         Config.objects.create(
-            bluesky_username='placeholder',
-            app_password='placeholder',
+            bluesky_username="placeholder",
+            app_password="placeholder",
             interval_hours=12,
             interval_minutes=0,
             allow_posts=False,
         )
-        print("\nNote: You will need to enter Bluesky credentials in Config and set allow_posts to 'True'.")
+        print(
+            "\nNote: You will need to enter Bluesky credentials in Config and set allow_posts to 'True'."
+        )
 
     dependencies = [
-        ('posts', '0001_initial'),
+        ("posts", "0001_initial"),
     ]
 
-    operations = [
-        migrations.RunPython(create_default_config)
-    ]
+    operations = [migrations.RunPython(create_default_config)]

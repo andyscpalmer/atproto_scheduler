@@ -23,7 +23,9 @@ class Config(models.Model):
 class Post(models.Model):
 
     text = models.TextField(max_length=300)
-    bluesky_username = models.ForeignKey(Config, on_delete=models.CASCADE, null=True, blank=True)
+    bluesky_username = models.ForeignKey(
+        Config, on_delete=models.CASCADE, null=True, blank=True
+    )
     link_1 = models.CharField(max_length=300, null=True, blank=True)
     link_card_title = models.CharField(max_length=100, null=True, blank=True)
     link_card_description = models.CharField(max_length=100, null=True, blank=True)

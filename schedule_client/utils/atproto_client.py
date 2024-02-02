@@ -9,8 +9,8 @@ from schedule_client.utils.s3 import ImageClient
 
 
 class AtprotoClient:
-    """Client for interacting with the at protocol
-    """    
+    """Client for interacting with the at protocol"""
+
     def __init__(self, bluesky_username: str, bluesky_password: str):
         self.bluesky_username = bluesky_username
         self.bluesky_password = bluesky_password
@@ -24,7 +24,6 @@ class AtprotoClient:
             print("Error logging into Bluesky account.")
             self.is_valid_login = False
 
-
     def post_to_account(self, post: PostObject) -> bool:
         """Posts to Bluesky
 
@@ -33,29 +32,31 @@ class AtprotoClient:
 
         Returns:
             bool: Value indicating success of posting operation
-        """        
+        """
         print(f"Posting to {self.bluesky_username}")
 
         embed = None
         facets = None
         text = post.text
         post_client = PostClient()
-        
+
         # Get hyperlinks
         if post.links and not post.is_link_card:
             text += "\n"
             for link in post.links:
                 text += f"{link}\n"
-            
+
             url_positions = self._extract_url_byte_positions(text, aggressive=True)
             facets = []
 
             for link in url_positions:
-                uri = link[0] if link[0].startswith('http') else f'https://{link[0]}'
+                uri = link[0] if link[0].startswith("http") else f"https://{link[0]}"
                 facets.append(
                     models.AppBskyRichtextFacet.Main(
                         features=[models.AppBskyRichtextFacet.Link(uri=uri)],
-                        index=models.AppBskyRichtextFacet.ByteSlice(byte_start=link[1], byte_end=link[2]),
+                        index=models.AppBskyRichtextFacet.ByteSlice(
+                            byte_start=link[1], byte_end=link[2]
+                        ),
                     )
                 )
 
@@ -74,8 +75,12 @@ class AtprotoClient:
                     return False
 
                 upload = self.client.com.atproto.repo.upload_blob(image_object)
-                images.append(models.AppBskyEmbedImages.Image(alt=image_with_alt["alt_text"], image=upload.blob))
-            
+                images.append(
+                    models.AppBskyEmbedImages.Image(
+                        alt=image_with_alt["alt_text"], image=upload.blob
+                    )
+                )
+
             embed = models.AppBskyEmbedImages.Main(images=images)
 
             image_client.close()
@@ -113,18 +118,17 @@ class AtprotoClient:
             return False
 
         return True
-    
-    
+
     def _extract_url_byte_positions(
-        self, text: str, *, aggressive: bool, encoding: str = 'UTF-8'
+        self, text: str, *, aggressive: bool, encoding: str = "UTF-8"
     ) -> t.List[t.Tuple[str, int, int]]:
         """If aggressive is False, only links beginning http or https will be detected"""
         encoded_text = text.encode(encoding)
 
         if aggressive:
-            pattern = rb'(?:[\w+]+\:\/\/)?(?:[\w\d-]+\.)*[\w-]+[\.\:]\w+\/?(?:[\/\?\=\&\#\.]?[\w-]+)+\/?'
+            pattern = rb"(?:[\w+]+\:\/\/)?(?:[\w\d-]+\.)*[\w-]+[\.\:]\w+\/?(?:[\/\?\=\&\#\.]?[\w-]+)+\/?"
         else:
-            pattern = rb'https?\:\/\/(?:[\w\d-]+\.)*[\w-]+[\.\:]\w+\/?(?:[\/\?\=\&\#\.]?[\w-]+)+\/?'
+            pattern = rb"https?\:\/\/(?:[\w\d-]+\.)*[\w-]+[\.\:]\w+\/?(?:[\/\?\=\&\#\.]?[\w-]+)+\/?"
 
         matches = re.finditer(pattern, encoded_text)
         url_byte_positions = []

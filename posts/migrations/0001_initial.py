@@ -8,55 +8,81 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Config',
+            name="Config",
             fields=[
-                ('bluesky_username', models.CharField(max_length=100, primary_key=True, serialize=False, unique=True)),
-                ('app_password', models.CharField(max_length=50)),
-                ('interval_hours', models.IntegerField(default=12)),
-                ('interval_minutes', models.IntegerField(default=0)),
-                ('allow_posts', models.BooleanField(default=False)),
+                (
+                    "bluesky_username",
+                    models.CharField(
+                        max_length=100, primary_key=True, serialize=False, unique=True
+                    ),
+                ),
+                ("app_password", models.CharField(max_length=50)),
+                ("interval_hours", models.IntegerField(default=12)),
+                ("interval_minutes", models.IntegerField(default=0)),
+                ("allow_posts", models.BooleanField(default=False)),
             ],
             options={
-                'verbose_name': 'Bluesky user configuration',
-                'verbose_name_plural': 'Bluesky user configurations',
-                'ordering': ['bluesky_username'],
+                "verbose_name": "Bluesky user configuration",
+                "verbose_name_plural": "Bluesky user configurations",
+                "ordering": ["bluesky_username"],
             },
         ),
         migrations.CreateModel(
-            name='Post',
+            name="Post",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('text', models.TextField(max_length=300)),
-                ('link_1', models.CharField(blank=True, max_length=300, null=True)),
-                ('link_card_title', models.CharField(blank=True, max_length=100, null=True)),
-                ('link_card_description', models.CharField(blank=True, max_length=100, null=True)),
-                ('link_2', models.CharField(blank=True, max_length=300, null=True)),
-                ('link_3', models.CharField(blank=True, max_length=300, null=True)),
-                ('link_4', models.CharField(blank=True, max_length=300, null=True)),
-                ('image_1', models.CharField(blank=True, max_length=200, null=True)),
-                ('image_2', models.CharField(blank=True, max_length=200, null=True)),
-                ('image_3', models.CharField(blank=True, max_length=200, null=True)),
-                ('image_4', models.CharField(blank=True, max_length=200, null=True)),
-                ('alt_1', models.TextField(blank=True, max_length=500, null=True)),
-                ('alt_2', models.TextField(blank=True, max_length=500, null=True)),
-                ('alt_3', models.TextField(blank=True, max_length=500, null=True)),
-                ('alt_4', models.TextField(blank=True, max_length=500, null=True)),
-                ('is_draft', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('posted_at', models.DateTimeField(blank=True, null=True)),
-                ('cid', models.CharField(blank=True, max_length=300, null=True)),
-                ('uri', models.CharField(blank=True, max_length=300, null=True)),
-                ('scheduled_post_time', models.DateTimeField(blank=True, null=True)),
-                ('bluesky_username', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='posts.config')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("text", models.TextField(max_length=300)),
+                ("link_1", models.CharField(blank=True, max_length=300, null=True)),
+                (
+                    "link_card_title",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "link_card_description",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                ("link_2", models.CharField(blank=True, max_length=300, null=True)),
+                ("link_3", models.CharField(blank=True, max_length=300, null=True)),
+                ("link_4", models.CharField(blank=True, max_length=300, null=True)),
+                ("image_1", models.CharField(blank=True, max_length=200, null=True)),
+                ("image_2", models.CharField(blank=True, max_length=200, null=True)),
+                ("image_3", models.CharField(blank=True, max_length=200, null=True)),
+                ("image_4", models.CharField(blank=True, max_length=200, null=True)),
+                ("alt_1", models.TextField(blank=True, max_length=500, null=True)),
+                ("alt_2", models.TextField(blank=True, max_length=500, null=True)),
+                ("alt_3", models.TextField(blank=True, max_length=500, null=True)),
+                ("alt_4", models.TextField(blank=True, max_length=500, null=True)),
+                ("is_draft", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("posted_at", models.DateTimeField(blank=True, null=True)),
+                ("cid", models.CharField(blank=True, max_length=300, null=True)),
+                ("uri", models.CharField(blank=True, max_length=300, null=True)),
+                ("scheduled_post_time", models.DateTimeField(blank=True, null=True)),
+                (
+                    "bluesky_username",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="posts.config",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "ordering": ["-created_at"],
             },
         ),
     ]
