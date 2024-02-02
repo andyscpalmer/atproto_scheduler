@@ -5,8 +5,7 @@ from schedule_client.utils.django_client import PostClient, ConfigClient
 
 
 def schedule_and_post() -> None:
-    """Container function for scheduled operations
-    """    
+    """Container function for scheduled operations"""
     try:
         config = ConfigClient()
     except:
@@ -36,10 +35,11 @@ def handle_account_posts(post_client: PostClient, account: AccountObject) -> Non
             raise
 
         if scheduled_posts:
-            atproto_client = AtprotoClient(account.bluesky_username, account.bluesky_password)
+            atproto_client = AtprotoClient(
+                account.bluesky_username, account.bluesky_password
+            )
             if atproto_client.is_valid_login:
                 for scheduled_post in scheduled_posts:
                     print(f"Posting: {scheduled_post.__str__}")
                     atproto_client.post_to_account(scheduled_post)
             del atproto_client
-

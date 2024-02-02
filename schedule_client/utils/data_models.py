@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class PostObject(BaseModel):
     id: int
     text: str = Field(default="", max_length=300)
