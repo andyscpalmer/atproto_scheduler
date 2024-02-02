@@ -27,12 +27,13 @@ class ImageClient:
         Returns:
             io.BytesIO: Bytes-like object representing image
         """        
+        full_image_path = f"images/{s3_image_path}"
         try:
-            full_image_path = f"images/{s3_image_path}"
             s3_response_object = self.client.get_object(Bucket=self.BUCKET_NAME, Key=full_image_path)
             return s3_response_object['Body'].read()
         except Exception as err:
             print(f"Error retrieving image: {s3_image_path}")
+            print(f"Full image path: {full_image_path}")
             print(err)
             return None
     

@@ -4,10 +4,11 @@ This is a tool that utilizes the [Python atproto library](https://atproto.blue/e
 
 It uses an AWS S3 bucket to allow posting images and also has the ability to automatically include rich text hyperlinks and link cards in posts.
 
-This web app is intended for single-person use at the moment and as such it only makes use of Django's built-in `superuser` admin role. Currently all user interactions are handled in Django's admin interface located at `<url>/admin` and there is no "front page".
+This web app is intended for single-person use at the moment and as such it only makes use of Django's built-in `superuser` admin role. Currently all user interactions are handled in Django's admin interface located at `<url>/admin` and there is no "front page". There is functionality for multiple _Bluesky_ accounts, however.
 
 This tool can be run locally with some small modifications but it was primarily developed to run on DigitalOcean. 
 
+For a continuous demo of this app, this is a Bluesky account which will automatically post pictures of my cat Maple at 3AM: [Late Night Maple](https://bsky.app/profile/latenitemaple.bsky.social)
 
 ## Installation
 
@@ -42,8 +43,6 @@ The following environment variables are required, except `DEVELOPMENT_MODE`. Som
 ## Use
 
 Once the app is up and running with database migrations completed, you will need to log in to the Django admin page with the `superuser` account, open the `Configs` table, and replace the `'placeholder'` data with your Bluesky account credentials. Additionally, the application will not be able to post until the `Allow posts` checkbox is checked.
-
-Currently only one BlueSky account at a time is able to post but expanding that is an immediate priority.
 
 All the best!
 
