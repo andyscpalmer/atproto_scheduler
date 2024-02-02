@@ -48,9 +48,11 @@ class PostClient:
 
         if unscheduled_posts:
             # Get time of last scheduled post - Reference time
-            last_scheduled_post = self.scheduled_posts.order_by(
-                "-scheduled_post_time"
-            ).first()
+            last_scheduled_post = (
+                self.scheduled_posts.filter(bluesky_username=account.bluesky_username)
+                .order_by("-scheduled_post_time")
+                .first()
+            )
 
             if last_scheduled_post:
                 reference_time = last_scheduled_post.scheduled_post_time + interval
