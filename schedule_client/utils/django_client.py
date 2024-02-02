@@ -10,11 +10,6 @@ class PostClient():
     """Handle interactions with post table
     """    
     def __init__(self) -> None:
-        self.config = Config.objects.first()
-        self.interval = timedelta(
-            hours=self.config.interval_hours,
-            minutes=self.config.interval_minutes
-        )
         self.non_draft_unpublished_posts = Post.objects.filter(is_draft=False).filter(posted_at=None)
         self.scheduled_posts = self.non_draft_unpublished_posts.exclude(scheduled_post_time=None)
 
@@ -40,13 +35,17 @@ class PostClient():
                                 .filter(bluesky_username=account.bluesky_username)
                                 .filter(scheduled_post_time=None)
                                 .all())
+        interval = timedelta(
+            hours=account.interval_hours,
+            minutes=account.interval_minutes
+        )
 
         if unscheduled_posts:
             # Get time of last scheduled post - Reference time
             last_scheduled_post = self.scheduled_posts.order_by("-scheduled_post_time").first()
 
             if last_scheduled_post:
-                reference_time = last_scheduled_post.scheduled_post_time + self.interval
+                reference_time = last_scheduled_post.scheduled_post_time + interval
             else:
                 reference_time = timezone.now() + timedelta(minutes=1)
 
@@ -58,7 +57,7 @@ class PostClient():
                 unscheduled_post.save()
 
                 # Update reference time to scheduled time used
-                reference_time += self.interval
+                reference_time += interval
 
 
     def get_scheduled_posts(self, account: AccountObject) -> list[PostObject]:
