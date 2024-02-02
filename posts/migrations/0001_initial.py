@@ -6,17 +6,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    def create_default_config(apps, schema_editor):
-        Config = apps.get_model('posts', 'Config')
-        Config.objects.create(
-            bluesky_username='placeholder',
-            app_password='placeholder',
-            interval_hours=12,
-            interval_minutes=0,
-            allow_posts=False,
-        )
-        print("\nNote: You will need to enter Bluesky credentials in Config and set allow_posts to 'True'.")
-
     initial = True
 
     dependencies = [
@@ -70,5 +59,4 @@ class Migration(migrations.Migration):
                 'ordering': ['-created_at'],
             },
         ),
-        migrations.RunPython(create_default_config)
     ]
