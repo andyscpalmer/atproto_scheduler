@@ -162,3 +162,4 @@ cython_debug/
 
 # Additional custom items
 /staticfiles
+requirements_dev.txt

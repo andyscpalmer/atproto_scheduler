@@ -6,43 +6,51 @@ from atproto_scheduler.settings import SCHEDULER_INTERVAL
 from posts.models import Post, Config
 from schedule_client.utils.data_models import PostObject, AccountObject
 
-class PostClient():
-    """Handle interactions with post table
-    """    
-    def __init__(self) -> None:
-        self.non_draft_unpublished_posts = Post.objects.filter(is_draft=False).filter(posted_at=None)
-        self.scheduled_posts = self.non_draft_unpublished_posts.exclude(scheduled_post_time=None)
 
+class PostClient:
+    """Handle interactions with post table"""
+
+    def __init__(self) -> None:
+        self.non_draft_unpublished_posts = Post.objects.filter(is_draft=False).filter(
+            posted_at=None
+        )
+        self.scheduled_posts = self.non_draft_unpublished_posts.exclude(
+            scheduled_post_time=None
+        )
 
     def clear_past_scheduled_times(self) -> None:
-        """Remove scheduled times for unposted elements that are scheduled in the past
-        """        
-        past_scheduled_posts = self.non_draft_unpublished_posts.filter(scheduled_post_time__lt=timezone.now()).all()
+        """Remove scheduled times for unposted elements that are scheduled in the past"""
+        past_scheduled_posts = self.non_draft_unpublished_posts.filter(
+            scheduled_post_time__lt=timezone.now()
+        ).all()
 
         for past_scheduled_post in past_scheduled_posts:
             past_scheduled_post.scheduled_post_time = None
             past_scheduled_post.save()
-
 
     def schedule_unscheduled_posts(self, account: AccountObject) -> None:
         """Produce a list of all unscheduled posts and distribute them evenly at pre-configured interval
 
         Args:
             account (AccountObject): The Bluesky account whose posts are being scheduled
-        """        
+        """
         # Get all unscheduled posts
-        unscheduled_posts = (self.non_draft_unpublished_posts
-                                .filter(bluesky_username=account.bluesky_username)
-                                .filter(scheduled_post_time=None)
-                                .all())
+        unscheduled_posts = (
+            self.non_draft_unpublished_posts.filter(
+                bluesky_username=account.bluesky_username
+            )
+            .filter(scheduled_post_time=None)
+            .all()
+        )
         interval = timedelta(
-            hours=account.interval_hours,
-            minutes=account.interval_minutes
+            hours=account.interval_hours, minutes=account.interval_minutes
         )
 
         if unscheduled_posts:
             # Get time of last scheduled post - Reference time
-            last_scheduled_post = self.scheduled_posts.order_by("-scheduled_post_time").first()
+            last_scheduled_post = self.scheduled_posts.order_by(
+                "-scheduled_post_time"
+            ).first()
 
             if last_scheduled_post:
                 reference_time = last_scheduled_post.scheduled_post_time + interval
@@ -59,7 +67,6 @@ class PostClient():
                 # Update reference time to scheduled time used
                 reference_time += interval
 
-
     def get_scheduled_posts(self, account: AccountObject) -> list[PostObject]:
         """Collect all unscheduled posts within the SCHEDULER_INTERVAL before and after timezone.now().
 
@@ -70,12 +77,20 @@ class PostClient():
             list[PostObject]: List of all posts within scheduler interval
         """
 
-        account_filtered_posts = self.scheduled_posts.filter(bluesky_username=account.bluesky_username)
+        account_filtered_posts = self.scheduled_posts.filter(
+            bluesky_username=account.bluesky_username
+        )
 
         schedule_window_begin = timezone.now() - SCHEDULER_INTERVAL
         schedule_window_end = timezone.now() + SCHEDULER_INTERVAL
-        
-        posts_within_window = account_filtered_posts.exclude(scheduled_post_time__lt=schedule_window_begin).exclude(scheduled_post_time__gt=schedule_window_end).all()
+
+        posts_within_window = (
+            account_filtered_posts.exclude(
+                scheduled_post_time__lt=schedule_window_begin
+            )
+            .exclude(scheduled_post_time__gt=schedule_window_end)
+            .all()
+        )
 
         post_objects = []
         for post in posts_within_window:
@@ -92,9 +107,15 @@ class PostClient():
             ]
 
             link_card_title = post.link_card_title if post.link_card_title else ""
-            link_card_description = post.link_card_description if post.link_card_description else ""
+            link_card_description = (
+                post.link_card_description if post.link_card_description else ""
+            )
 
-            is_link_card = len(links) == 1 and link_card_title != "" and link_card_description != ""
+            is_link_card = (
+                len(links) == 1
+                and link_card_title != ""
+                and link_card_description != ""
+            )
 
             post_object = PostObject(
                 id=post.id,
@@ -113,23 +134,21 @@ class PostClient():
             print(f"Post links: {post_object.links}")
             print(f"Post image data: {post_object.image_urls_with_alts}")
             post_objects.append(post_object)
-        
+
         return post_objects
-    
 
     def set_post_as_draft(self, post_id: int) -> None:
         """Set a post as a draft. Used in the event of an error posting to Bluesky
 
         Args:
             post_id (int): Unique identifier of post
-        """        
+        """
         try:
             post_to_draft = Post.objects.filter(id=post_id).first()
             post_to_draft.is_draft = True
             post_to_draft.save()
         except:
             raise
-
 
     def set_as_posted(self, post_id: int, cid: str, uri: str) -> None:
         """Set a post as published and record relevant data
@@ -138,7 +157,7 @@ class PostClient():
             post_id (int): Unique identifier of post
             cid (str): CID response value from Bluesky
             uri (str): URI response value from Bluesky
-        """        
+        """
         try:
             posted_object = Post.objects.filter(id=post_id).first()
             posted_object.posted_at = timezone.now()
@@ -149,9 +168,8 @@ class PostClient():
             raise
 
 
-class ConfigClient():
-    """Handle interactions with configuration table
-    """    
+class ConfigClient:
+    """Handle interactions with configuration table"""
 
     def __init__(self) -> None:
         self.is_placeholder = False
@@ -161,10 +179,8 @@ class ConfigClient():
         if not self.is_placeholder:
             self.populate_bluesky_accounts()
 
-    
     def populate_bluesky_accounts(self) -> None:
-        """Populate Bluesky user data into self.accounts
-        """        
+        """Populate Bluesky user data into self.accounts"""
         raw_accounts = Config.objects.all()
         for raw_account in raw_accounts:
             account = AccountObject(
@@ -172,14 +188,12 @@ class ConfigClient():
                 bluesky_password=raw_account.app_password,
                 interval_hours=raw_account.interval_hours,
                 interval_minutes=raw_account.interval_minutes,
-                allow_posts=raw_account.allow_posts
+                allow_posts=raw_account.allow_posts,
             )
             self.accounts.append(account)
 
-
     def check_placeholder_status(self) -> None:
-        """Check for presence of configurations. Adds placeholder if none exists.
-        """        
+        """Check for presence of configurations. Adds placeholder if none exists."""
         is_one_config_entry = len(Config.objects.all())
         is_first_placeholder = Config.objects.first().bluesky_username == "placeholder"
 
