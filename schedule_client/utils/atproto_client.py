@@ -4,7 +4,7 @@ import typing as t
 from atproto import Client, models
 
 from schedule_client.utils.django_client import PostClient
-from schedule_client.utils.models import PostObject
+from schedule_client.utils.data_models import PostObject, AccountObject
 from schedule_client.utils.s3 import ImageClient
 
 

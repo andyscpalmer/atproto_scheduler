@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from atproto_scheduler.settings import SCHEDULER_INTERVAL
 from posts.models import Post, Config
-from schedule_client.utils.models import PostObject
+from schedule_client.utils.data_models import PostObject, AccountObject
 
 class PostClient():
     """Handle interactions with post table
@@ -29,14 +29,19 @@ class PostClient():
             past_scheduled_post.save()
 
 
-    def schedule_unscheduled_posts(self) -> None:
+    def schedule_unscheduled_posts(self, account: AccountObject) -> None:
         """Produce a list of all unscheduled posts and distribute them evenly at pre-configured interval
+
+        Args:
+            account (AccountObject): The Bluesky account whose posts are being scheduled
         """        
         # Get all unscheduled posts
-        unscheduled_posts = self.non_draft_unpublished_posts.filter(scheduled_post_time=None).all()
+        unscheduled_posts = (self.non_draft_unpublished_posts
+                                .filter(bluesky_username=account.bluesky_username)
+                                .filter(scheduled_post_time=None)
+                                .all())
 
         if unscheduled_posts:
-
             # Get time of last scheduled post - Reference time
             last_scheduled_post = self.scheduled_posts.order_by("-scheduled_post_time").first()
 
@@ -56,16 +61,22 @@ class PostClient():
                 reference_time += self.interval
 
 
-    def get_scheduled_posts(self) -> list[PostObject]:
+    def get_scheduled_posts(self, account: AccountObject) -> list[PostObject]:
         """Collect all unscheduled posts within the SCHEDULER_INTERVAL before and after timezone.now().
+
+        Args:
+            account (AccountObject): The Bluesky account whose posts are being retrieved
 
         Returns:
             list[PostObject]: List of all posts within scheduler interval
-        """        
+        """
+
+        account_filtered_posts = self.scheduled_posts.filter(bluesky_username=account.bluesky_username)
+
         schedule_window_begin = timezone.now() - SCHEDULER_INTERVAL
         schedule_window_end = timezone.now() + SCHEDULER_INTERVAL
         
-        posts_within_window = self.scheduled_posts.exclude(scheduled_post_time__lt=schedule_window_begin).exclude(scheduled_post_time__gt=schedule_window_end).all()
+        posts_within_window = account_filtered_posts.exclude(scheduled_post_time__lt=schedule_window_begin).exclude(scheduled_post_time__gt=schedule_window_end).all()
 
         post_objects = []
         for post in posts_within_window:
@@ -89,6 +100,7 @@ class PostClient():
             post_object = PostObject(
                 id=post.id,
                 text=post.text,
+                bluesky_username=account.bluesky_username,
                 links=links,
                 link_card_title=link_card_title,
                 link_card_description=link_card_description,
@@ -144,36 +156,33 @@ class ConfigClient():
 
     def __init__(self) -> None:
         self.is_placeholder = False
-        self.check_config_and_add_default()
-        self.bluesky_username = None
-        self.bluesky_password = None
-        self.interval_hours = None
-        self.interval_minutes = None
-        self.allow_posts = None
+        self.check_placeholder_status()
+        self.accounts = []
 
         if not self.is_placeholder:
-            raw_config = Config.objects.first()
-            self.bluesky_username = raw_config.bluesky_username
-            self.bluesky_password = raw_config.app_password
-            self.interval_hours = raw_config.interval_hours
-            self.interval_minutes = raw_config.interval_minutes
-            self.allow_posts = raw_config.allow_posts
+            self.populate_bluesky_accounts()
 
-    def check_config_and_add_default(self) -> None:
+    
+    def populate_bluesky_accounts(self) -> None:
+        """Populate Bluesky user data into self.accounts
+        """        
+        raw_accounts = Config.objects.all()
+        for raw_account in raw_accounts:
+            account = AccountObject(
+                bluesky_username=raw_account.bluesky_username,
+                bluesky_password=raw_account.app_password,
+                interval_hours=raw_account.interval_hours,
+                interval_minutes=raw_account.interval_minutes,
+                allow_posts=raw_account.allow_posts
+            )
+            self.accounts.append(account)
+
+
+    def check_placeholder_status(self) -> None:
         """Check for presence of configurations. Adds placeholder if none exists.
         """        
-        
-        if len(list(Config.objects.all())) < 1:
-            print("No configuration detected. Adding placeholder configuration.")
-            default_config = Config(
-                bluesky_username="placeholder",
-                app_password="placeholder",
-                interval_hours=12,
-                interval_minutes=0,
-                allow_posts=False
-            )
-            default_config.save()
-            self.is_placeholder = True
-        
-        elif Config.objects.first().bluesky_username == "placeholder":
+        is_one_config_entry = len(Config.objects.all())
+        is_first_placeholder = Config.objects.first().bluesky_username == "placeholder"
+
+        if is_one_config_entry and is_first_placeholder:
             self.is_placeholder = True
