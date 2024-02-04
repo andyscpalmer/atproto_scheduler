@@ -2,13 +2,26 @@ from django.contrib import admin
 from posts.models import Post, Config
 
 
+@admin.action(
+    description="Set As Draft",
+)
+def set_draft(modeladmin, request, queryset):
+    queryset.update(is_draft=True)
+
+
+@admin.action(
+    description="Set To Publish",
+)
+def set_publish(modeladmin, request, queryset):
+    queryset.update(is_draft=False)
+
+
+@admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = [
         "post_snippet",
-        "bluesky_username",
-        "is_draft",
-        "scheduled_post_time",
-        "posted_at",
+        "name_with_emoji",
+        "post_status",
     ]
     readonly_fields = ["created_at", "updated_at"]
     fieldsets = [
@@ -29,8 +42,7 @@ class PostAdmin(admin.ModelAdmin):
             {
                 "classes": ["collapse", "extrapretty"],
                 "fields": [
-                    "link_1",
-                    ("link_card_title", "link_card_description"),
+                    ("link_1", "link_card_title", "link_card_description"),
                     "link_2",
                     "link_3",
                     "link_4",
@@ -57,16 +69,14 @@ class PostAdmin(admin.ModelAdmin):
             },
         ),
     ]
+    actions = [set_draft, set_publish]
 
 
+@admin.register(Config)
 class ConfigAdmin(admin.ModelAdmin):
     list_display = [
-        "bluesky_username",
+        "name_with_emoji",
         "interval_hours",
         "interval_minutes",
-        "allow_posts",
+        "publishing_status",
     ]
-
-
-admin.site.register(Post, PostAdmin)
-admin.site.register(Config, ConfigAdmin)

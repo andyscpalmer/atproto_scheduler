@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.db import models
 
+from posts.utils.constants import PUBLISH_STATUS_EMOJIS
+from posts.utils.helper_functions import name_with_animal_emoji
+
 
 class Config(models.Model):
     bluesky_username = models.CharField(max_length=100, primary_key=True, unique=True)
@@ -12,9 +15,30 @@ class Config(models.Model):
     allow_posts = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = "Bluesky user configuration"
-        verbose_name_plural = "Bluesky user configurations"
+        verbose_name = "Bluesky User Configuration"
+        verbose_name_plural = "Bluesky User Configurations"
         ordering = ["bluesky_username"]
+
+    @admin.display(description="Publishing Status")
+    def publishing_status(self) -> str:
+        """Display whether a user's ability to publish is set to disabled or active
+
+        Returns:
+            str: Bluesky Username with an emoji for easier identification by eye
+        """
+        publishing_status = f"{PUBLISH_STATUS_EMOJIS['disabled']} Disabled"
+        if self.allow_posts:
+            publishing_status = f"{PUBLISH_STATUS_EMOJIS['enabled']} Active"
+        return publishing_status
+
+    @admin.display(description="Bluesky User")
+    def name_with_emoji(self) -> str:
+        """Generate an emoji derived arbitrarily from the characters in the username.
+
+        Returns:
+            str: Bluesky Username with an emoji for easier identification by eye
+        """
+        return name_with_animal_emoji(self.bluesky_username)
 
     def __str__(self):
         return self.bluesky_username
@@ -52,8 +76,40 @@ class Post(models.Model):
         ordering = ["-created_at"]
 
     @admin.display(description="Post snippet")
-    def post_snippet(self):
+    def post_snippet(self) -> str:
         return self.text[:100]
+
+    @admin.display(description="Status")
+    def post_status(self) -> str:
+        is_published = True if self.posted_at or (self.cid and self.uri) else False
+        if self.is_draft:
+            return "📝 Draft"
+        elif is_published:
+            return "✅ Published"
+        else:
+            schedule_time_formatted = "awaiting time assignment..."
+            if self.scheduled_post_time:
+                schedule_time_formatted = self.scheduled_post_time.strftime(
+                    "%b. %d, %Y, %I:%M %p"
+                )
+            return f"⏳ Scheduled - {schedule_time_formatted}"
+
+    @admin.display(description="Bluesky User")
+    def name_with_emoji(self) -> str:
+        """Generate an emoji derived arbitrarily from the characters in the username.
+
+        There is also an emoji for whether posts are enabled.
+
+        Returns:
+            str: Bluesky Username with an emoji for easier identification by eye
+        """
+        user_config = Config.objects.filter(
+            bluesky_username=self.bluesky_username
+        ).first()
+        publish_flag = PUBLISH_STATUS_EMOJIS['disabled']
+        if user_config.allow_posts:
+            publish_flag = PUBLISH_STATUS_EMOJIS['enabled']
+        return f"{name_with_animal_emoji(self.bluesky_username)} {publish_flag}"
 
     def __str__(self):
         return f"{self.id}_{self.text[:50]}"
