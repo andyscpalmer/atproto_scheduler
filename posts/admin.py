@@ -38,6 +38,7 @@ class PostAdmin(admin.ModelAdmin):
                     "bluesky_username",
                     "is_draft",
                     "scheduled_post_time",
+                    "reply_to",
                 ],
             },
         ),

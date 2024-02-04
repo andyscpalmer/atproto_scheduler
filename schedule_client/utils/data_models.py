@@ -2,6 +2,8 @@ from datetime import timedelta
 
 from pydantic import BaseModel, Field
 
+from posts.models import Post
+
 
 class PostObject(BaseModel):
     id: int
@@ -12,6 +14,7 @@ class PostObject(BaseModel):
     link_card_description: str = Field(default="")
     is_link_card: bool = Field(default=False)
     image_urls_with_alts: list[dict] = Field(default=[], max_length=4)
+    reply_to: int = Field(default=None)
 
 
 class AccountObject(BaseModel):

@@ -21,7 +21,7 @@ class PostClient:
     def clear_past_scheduled_times(self) -> None:
         """Remove scheduled times for unposted elements that are scheduled in the past"""
         past_scheduled_posts = self.non_draft_unpublished_posts.filter(
-            scheduled_post_time__lt=timezone.now()
+            scheduled_post_time__lt=timezone.now()-SCHEDULER_INTERVAL
         ).all()
 
         for past_scheduled_post in past_scheduled_posts:
@@ -60,13 +60,21 @@ class PostClient:
 
             # Loop through all unscheduled posts
             for unscheduled_post in unscheduled_posts:
+                print(f"Unscheduled Post: {unscheduled_post}")
                 # Set scheduled time to reference time plus interval
-                print(f"Setting {unscheduled_post.__str__} to time {reference_time}")
-                unscheduled_post.scheduled_post_time = reference_time
-                unscheduled_post.save()
+                if unscheduled_post.reply_to:
+                    if unscheduled_post.reply_to.scheduled_post_time or unscheduled_post.reply_to.is_draft:
+                        self.set_reply_status(unscheduled_post.id, unscheduled_post.reply_to.id)
+                    else:
+                        # Case where parent post is unscheduled
+                        pass
+                else:
+                    print(f"Setting {unscheduled_post.__str__} to time {reference_time}")
+                    unscheduled_post.scheduled_post_time = reference_time
+                    unscheduled_post.save()
 
-                # Update reference time to scheduled time used
-                reference_time += account.interval
+                    # Update reference time to scheduled time used
+                    reference_time += account.interval
 
     def get_scheduled_posts(self, account: AccountObject) -> list[PostObject]:
         """Collect all unscheduled posts within the SCHEDULER_INTERVAL before and after timezone.now().
@@ -127,6 +135,7 @@ class PostClient:
                 link_card_description=link_card_description,
                 is_link_card=is_link_card,
                 image_urls_with_alts=image_urls_with_alts,
+                reply_to=post.reply_to.id if post.reply_to else 0,
             )
 
             print(f"Posting scheduled post")
@@ -137,6 +146,67 @@ class PostClient:
             post_objects.append(post_object)
 
         return post_objects
+    
+    def get_reply_details(self, post_id: int) -> tuple[str]:
+        try:
+            reply_post = Post.objects.filter(id=post_id).first()
+            parent_post = Post.objects.filter(id=reply_post.reply_to.id).first()
+
+            if parent_post:
+                print("parent post found")
+                if parent_post.cid and parent_post.uri and parent_post.posted_at:
+                    print("test")
+                    return parent_post.cid, parent_post.uri
+                else:
+                    self.set_reply_status(reply_post.id, parent_post.id)
+
+        except:
+            raise
+
+        return "", ""
+
+    def set_reply_status(self, reply_post_id: int, parent_post_id: int) -> None:
+        try:
+            reply_post = Post.objects.filter(id=reply_post_id).first()
+            parent_post = Post.objects.filter(id=parent_post_id).first()
+
+            # Case - Reply is unscheduled and parent is published
+            if parent_post.cid and parent_post.uri and parent_post.posted_at and not reply_post.scheduled_post_time:
+                reply_time = timezone.now() + 2*SCHEDULER_INTERVAL
+                print(f"Setting reply time for {reply_post.__str__} to {reply_time}")
+                reply_post.scheduled_post_time = timezone.now() + 2*SCHEDULER_INTERVAL
+                reply_post.save()
+
+            # Case - Reply is unscheduled and parent is scheduled and unpublished
+            elif parent_post.scheduled_post_time and not parent_post.posted_at:
+                # Schedule reply post for immediately after original post
+                reply_time = parent_post.scheduled_post_time + 2*SCHEDULER_INTERVAL
+                print(f"Parent of {reply_post.__str__} not posted yet - scheduling after parent to {reply_time}")
+                reply_post.scheduled_post_time = reply_time
+                reply_post.save()
+
+            # Case - Reply scheduled and parent post is unscheduled and unpublished
+            elif not parent_post.scheduled_post_time and reply_post.scheduled_post_time:
+                print(f"Parent of {reply_post.__str__} not scheduled. Unscheduling reply.")
+                reply_post.scheduled_post_time = None
+                reply_post.save()
+
+            # Case - Parent is draft
+            elif parent_post.is_draft:
+                print(f"Parent of {reply_post.__str__} is draft. Setting reply to draft.")
+                self.set_post_as_draft(reply_post.id)
+                
+            # Case - Incomplete parent data
+            elif not (parent_post.cid and parent_post.uri and parent_post.posted_at) and (parent_post.cid or parent_post.uri or parent_post.posted_at):
+                error = f"Incomplete parent data for {reply_post.__str__}"
+                print(error)
+                self.record_error(reply_post.id, error)
+                self.set_post_as_draft(reply_post.id)
+            else:
+                print(f"Something else going on with {reply_post.__str__}")
+                pass
+        except:
+            raise
 
     def set_post_as_draft(self, post_id: int) -> None:
         """Set a post as a draft. Used in the event of an error posting to Bluesky
