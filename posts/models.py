@@ -5,7 +5,7 @@ from django.db import models
 from django.utils import timezone
 
 from posts.utils.constants import PUBLISH_STATUS_EMOJIS
-from posts.utils.helper_functions import name_with_animal_emoji
+from posts.utils.helper_functions import get_name_emoji, get_name_with_animal_emoji
 
 
 class Config(models.Model):
@@ -39,7 +39,7 @@ class Config(models.Model):
         Returns:
             str: Bluesky Username with an emoji for easier identification by eye
         """
-        return name_with_animal_emoji(self.bluesky_username)
+        return get_name_with_animal_emoji(self.bluesky_username)
 
     def __str__(self):
         return self.bluesky_username
@@ -73,6 +73,7 @@ class Post(models.Model):
     uri = models.CharField(max_length=300, null=True, blank=True)
     scheduled_post_time = models.DateTimeField(null=True, blank=True)
     error = models.CharField(max_length=2000, null=True, blank=True)
+    post_status = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -81,26 +82,20 @@ class Post(models.Model):
     def post_snippet(self) -> str:
         return self.text[:100]
 
-    @admin.display(description="Status")
-    def post_status(self) -> str:
+    def save(self, *args, **kwargs):
         is_published = True if self.posted_at or (self.cid and self.uri) else False
         if self.is_draft and self.error:
-            return "❌ Error"
+            self.post_status = "❌ Error"
         elif self.is_draft:
-            return "📝 Draft"
+            self.post_status = "📝 Draft"
         elif is_published:
-            return "✅ Published"
+            self.post_status = "✅ Published"
         else:
-            schedule_time_formatted = "awaiting time assignment..."
-            if self.scheduled_post_time:
-                timezone_info = timezone.get_current_timezone()
-                schedule_time_formatted = self.scheduled_post_time.astimezone(
-                    tz=timezone_info
-                ).strftime("%b. %d, %Y, %I:%M %p")
-            return f"⏳ Scheduled - {schedule_time_formatted}"
+            self.post_status = f"⏳ Scheduled"
+        super(Post, self).save(*args, **kwargs)
 
-    @admin.display(description="Bluesky User")
-    def name_with_emoji(self) -> str:
+    @admin.display(description="")
+    def name_emoji(self) -> str:
         """Generate an emoji derived arbitrarily from the characters in the username.
 
         There is also an emoji for whether posts are enabled.
@@ -112,12 +107,22 @@ class Post(models.Model):
             bluesky_username=self.bluesky_username
         ).first()
         if user_config:
+            return get_name_emoji(user_config.bluesky_username)
+        else:
+            return "❓"
+
+    @admin.display(description="")
+    def posts_enabled(self) -> str:
+        user_config = Config.objects.filter(
+            bluesky_username=self.bluesky_username
+        ).first()
+        if user_config:
             publish_flag = PUBLISH_STATUS_EMOJIS["disabled"]
             if user_config.allow_posts:
                 publish_flag = PUBLISH_STATUS_EMOJIS["enabled"]
-            return f"{name_with_animal_emoji(self.bluesky_username)} {publish_flag}"
+            return publish_flag
         else:
-            return "❓ unassigned ❓"
+            return "❓"
 
     def __str__(self):
         return f"{self.id}_{self.text[:50]}"

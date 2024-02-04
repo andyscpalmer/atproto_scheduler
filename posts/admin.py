@@ -20,9 +20,13 @@ def set_publish(modeladmin, request, queryset):
 class PostAdmin(admin.ModelAdmin):
     list_display = [
         "post_snippet",
-        "name_with_emoji",
+        "name_emoji",
+        "bluesky_username",
+        "posts_enabled",
         "post_status",
+        "scheduled_post_time",
     ]
+    list_filter = ["bluesky_username", "post_status", "scheduled_post_time"]
     readonly_fields = ["error", "created_at", "updated_at"]
     fieldsets = [
         (
