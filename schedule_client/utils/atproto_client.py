@@ -110,10 +110,12 @@ class AtprotoClient:
             )
             post_client.set_as_posted(post.id, post_response.cid, post_response.uri)
             print("Successfully posted to Bluesky.")
+            post_client.record_error(post.id, "")
         except Exception as err:
             print(f"Error with post: {post.text[:50]}")
             print(f"Setting {post.text[:50]} as draft.")
             post_client.set_post_as_draft(post.id)
+            post_client.record_error(post.id, err)
             print(err)
             return False
 

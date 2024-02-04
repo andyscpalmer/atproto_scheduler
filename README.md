@@ -1,6 +1,6 @@
 # Atproto Post Scheduler
 
-This is a tool that utilizes the [Python atproto library](https://atproto.blue/en/latest/) along with [django](https://www.djangoproject.com/) to create an interface where users can compose draft posts and have them publish at pre-specified times.
+This is a tool that utilizes the [Python AT Protocol SDK](https://atproto.blue/en/latest/) along with [Django](https://www.djangoproject.com/) to create an interface where users can compose draft posts and have them publish at pre-specified times.
 
 It uses an AWS S3 bucket to allow posting images and also has the ability to automatically include rich text hyperlinks and link cards in posts.
 
