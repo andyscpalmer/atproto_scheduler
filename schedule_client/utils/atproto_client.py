@@ -37,8 +37,26 @@ class AtprotoClient:
 
         embed = None
         facets = None
+        reply = None
         text = post.text
         post_client = PostClient()
+
+        if post.reply_to:
+            print("Post is a reply")
+            reply_cid, reply_uri = post_client.get_reply_details(post.id)
+
+            if reply_cid and reply_uri:
+                parent_ref = models.ComAtprotoRepoStrongRef.Main(
+                    cid=reply_cid,
+                    uri=reply_uri,
+                )
+                reply = models.AppBskyFeedPost.ReplyRef(
+                    parent=parent_ref,
+                    root=parent_ref
+                )
+                print(f"Reply object: {reply}")
+            else:
+                return False
 
         # Get hyperlinks
         if post.links and not post.is_link_card:
@@ -105,6 +123,7 @@ class AtprotoClient:
                         text=text,
                         facets=facets,
                         embed=embed,
+                        reply=reply,
                     ),
                 )
             )

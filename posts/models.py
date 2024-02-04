@@ -74,6 +74,7 @@ class Post(models.Model):
     scheduled_post_time = models.DateTimeField(null=True, blank=True)
     error = models.CharField(max_length=2000, null=True, blank=True)
     post_status = models.CharField(max_length=100, null=True, blank=True)
+    reply_to = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
 
     class Meta:
         ordering = ["-created_at"]
@@ -125,4 +126,4 @@ class Post(models.Model):
             return "❓"
 
     def __str__(self):
-        return f"{self.id}_{self.text[:50]}"
+        return f"{self.id}_{self.bluesky_username}_{self.text[:50]}"
