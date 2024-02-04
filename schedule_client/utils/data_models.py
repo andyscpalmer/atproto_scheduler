@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from pydantic import BaseModel, Field
 
 
@@ -15,6 +17,5 @@ class PostObject(BaseModel):
 class AccountObject(BaseModel):
     bluesky_username: str = Field(default="")
     bluesky_password: str = Field(default="")
-    interval_hours: int = Field(default=12)
-    interval_minutes: int = Field(default=0)
+    interval: timedelta = Field(default=timedelta(hours=12))
     allow_posts: bool = Field(default=False)

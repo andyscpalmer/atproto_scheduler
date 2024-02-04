@@ -42,9 +42,6 @@ class PostClient:
             .filter(scheduled_post_time=None)
             .all()
         )
-        interval = timedelta(
-            hours=account.interval_hours, minutes=account.interval_minutes
-        )
 
         if unscheduled_posts:
             # Get time of last scheduled post - Reference time
@@ -55,7 +52,9 @@ class PostClient:
             )
 
             if last_scheduled_post:
-                reference_time = last_scheduled_post.scheduled_post_time + interval
+                reference_time = (
+                    last_scheduled_post.scheduled_post_time + account.interval
+                )
             else:
                 reference_time = timezone.now() + timedelta(minutes=1)
 
@@ -67,7 +66,7 @@ class PostClient:
                 unscheduled_post.save()
 
                 # Update reference time to scheduled time used
-                reference_time += interval
+                reference_time += account.interval
 
     def get_scheduled_posts(self, account: AccountObject) -> list[PostObject]:
         """Collect all unscheduled posts within the SCHEDULER_INTERVAL before and after timezone.now().
@@ -169,6 +168,20 @@ class PostClient:
         except:
             raise
 
+    def record_error(self, post_id: int, error: str) -> None:
+        """Record an error if a post fails
+
+        Args:
+            post_id (int): Unique identifier of post
+            error (str): Either an exception log for a post error or a blank string on success
+        """
+        try:
+            posted_object = Post.objects.filter(id=post_id).first()
+            posted_object.error = error
+            posted_object.save()
+        except:
+            raise
+
 
 class ConfigClient:
     """Handle interactions with configuration table"""
@@ -188,8 +201,7 @@ class ConfigClient:
             account = AccountObject(
                 bluesky_username=raw_account.bluesky_username,
                 bluesky_password=raw_account.app_password,
-                interval_hours=raw_account.interval_hours,
-                interval_minutes=raw_account.interval_minutes,
+                interval=raw_account.interval,
                 allow_posts=raw_account.allow_posts,
             )
             self.accounts.append(account)

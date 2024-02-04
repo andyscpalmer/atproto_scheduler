@@ -23,7 +23,7 @@ class PostAdmin(admin.ModelAdmin):
         "name_with_emoji",
         "post_status",
     ]
-    readonly_fields = ["created_at", "updated_at"]
+    readonly_fields = ["error", "created_at", "updated_at"]
     fieldsets = [
         (
             None,
@@ -68,6 +68,13 @@ class PostAdmin(admin.ModelAdmin):
                 "fields": ["posted_at", "cid", "uri"],
             },
         ),
+        (
+            "Metadata",
+            {
+                "classes": ["collapse", "extrapretty"],
+                "fields": ["error", "created_at", "updated_at"],
+            },
+        ),
     ]
     actions = [set_draft, set_publish]
 
@@ -76,7 +83,6 @@ class PostAdmin(admin.ModelAdmin):
 class ConfigAdmin(admin.ModelAdmin):
     list_display = [
         "name_with_emoji",
-        "interval_hours",
-        "interval_minutes",
+        "interval",
         "publishing_status",
     ]

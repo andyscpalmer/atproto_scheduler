@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.contrib import admin
 from django.db import models
+from django.utils import timezone
 
 from posts.utils.constants import PUBLISH_STATUS_EMOJIS
 from posts.utils.helper_functions import name_with_animal_emoji
@@ -8,9 +11,7 @@ from posts.utils.helper_functions import name_with_animal_emoji
 class Config(models.Model):
     bluesky_username = models.CharField(max_length=100, primary_key=True, unique=True)
     app_password = models.CharField(max_length=50)
-
-    interval_hours = models.IntegerField(default=12)
-    interval_minutes = models.IntegerField(default=0)
+    interval = models.DurationField(default=timedelta(hours=24))
 
     allow_posts = models.BooleanField(default=False)
 
@@ -71,6 +72,7 @@ class Post(models.Model):
     cid = models.CharField(max_length=300, null=True, blank=True)
     uri = models.CharField(max_length=300, null=True, blank=True)
     scheduled_post_time = models.DateTimeField(null=True, blank=True)
+    error = models.CharField(max_length=2000, null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -82,16 +84,19 @@ class Post(models.Model):
     @admin.display(description="Status")
     def post_status(self) -> str:
         is_published = True if self.posted_at or (self.cid and self.uri) else False
-        if self.is_draft:
+        if self.is_draft and self.error:
+            return "❌ Error"
+        elif self.is_draft:
             return "📝 Draft"
         elif is_published:
             return "✅ Published"
         else:
             schedule_time_formatted = "awaiting time assignment..."
             if self.scheduled_post_time:
-                schedule_time_formatted = self.scheduled_post_time.strftime(
-                    "%b. %d, %Y, %I:%M %p"
-                )
+                timezone_info = timezone.get_current_timezone()
+                schedule_time_formatted = self.scheduled_post_time.astimezone(
+                    tz=timezone_info
+                ).strftime("%b. %d, %Y, %I:%M %p")
             return f"⏳ Scheduled - {schedule_time_formatted}"
 
     @admin.display(description="Bluesky User")
@@ -106,10 +111,13 @@ class Post(models.Model):
         user_config = Config.objects.filter(
             bluesky_username=self.bluesky_username
         ).first()
-        publish_flag = PUBLISH_STATUS_EMOJIS['disabled']
-        if user_config.allow_posts:
-            publish_flag = PUBLISH_STATUS_EMOJIS['enabled']
-        return f"{name_with_animal_emoji(self.bluesky_username)} {publish_flag}"
+        if user_config:
+            publish_flag = PUBLISH_STATUS_EMOJIS["disabled"]
+            if user_config.allow_posts:
+                publish_flag = PUBLISH_STATUS_EMOJIS["enabled"]
+            return f"{name_with_animal_emoji(self.bluesky_username)} {publish_flag}"
+        else:
+            return "❓ unassigned ❓"
 
     def __str__(self):
         return f"{self.id}_{self.text[:50]}"

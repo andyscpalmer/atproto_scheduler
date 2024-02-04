@@ -2,7 +2,4 @@
 
 ANIMAL_EMOJIS = "🐵🐒🦍🐶🐺🦊🐱🦁🐯🐴🦄🐮🐷🐏🐐🐪🐘🦏🐀🐰🐿🐻🐨🐼🦃🐓🐣🐧🦅🦆🦉🐸🐊🐢🦎🐍🐳🐬🐟🐠🐡🦈🐙🐚🦀🦑"
 
-PUBLISH_STATUS_EMOJIS = {
-    "disabled": "🔴",
-    "enabled": "🔵"
-}
+PUBLISH_STATUS_EMOJIS = {"disabled": "🔴", "enabled": "🟢"}
