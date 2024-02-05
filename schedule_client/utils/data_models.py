@@ -2,8 +2,6 @@ from datetime import timedelta
 
 from pydantic import BaseModel, Field
 
-from posts.models import Post
-
 
 class PostObject(BaseModel):
     id: int

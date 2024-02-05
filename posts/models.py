@@ -2,10 +2,10 @@ from datetime import timedelta
 
 from django.contrib import admin
 from django.db import models
-from django.utils import timezone
 
-from posts.utils.constants import PUBLISH_STATUS_EMOJIS
+from posts.utils.constants import PUBLISH_STATUS_EMOJIS, DETAIL_EMOJIS
 from posts.utils.helper_functions import get_name_emoji, get_name_with_animal_emoji
+from schedule_client.utils.data_models import PostObject
 
 
 class Config(models.Model):
@@ -74,7 +74,9 @@ class Post(models.Model):
     scheduled_post_time = models.DateTimeField(null=True, blank=True)
     error = models.CharField(max_length=2000, null=True, blank=True)
     post_status = models.CharField(max_length=100, null=True, blank=True)
-    reply_to = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE)
+    reply_to = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.CASCADE
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -94,6 +96,60 @@ class Post(models.Model):
         else:
             self.post_status = f"⏳ Scheduled"
         super(Post, self).save(*args, **kwargs)
+
+    def reply_to_int(self) -> bool:
+        if self.reply_to:
+            return self.reply_to.id
+        else:
+            return 0
+
+    def links(self) -> list[str]:
+        links_raw = [self.link_1, self.link_2, self.link_3, self.link_4]
+        return [link for link in links_raw if link]
+
+    def images_raw(self) -> list[str]:
+        images_raw = [self.image_1, self.image_2, self.image_3, self.image_4]
+        return images_raw
+
+    def alt_texts_raw(self) -> list[str]:
+        return [self.alt_1, self.alt_2, self.alt_3, self.alt_4]
+
+    def image_urls_with_alts(self) -> list[dict]:
+        images = [image for image in self.images_raw() if image]
+        image_urls_with_alts = [
+            {"image": images[i], "alt_text": self.alt_texts_raw()[i]}
+            for i in range(len(images))
+        ]
+        return image_urls_with_alts
+
+    def is_link_card(self) -> bool:
+        single_link = len(self.links()) == 1
+        has_card_title = self.link_card_title not in ("", None)
+        has_card_description = self.link_card_description not in ("", None)
+        return single_link and has_card_title and has_card_description
+
+    def post_object(self) -> PostObject:
+        text_str = self.text if self.text else ""
+        bluesky_username_str = (
+            self.bluesky_username.bluesky_username if self.bluesky_username else ""
+        )
+        link_card_title_str = self.link_card_title if self.link_card_title else ""
+        link_card_description_str = (
+            self.link_card_description if self.link_card_description else ""
+        )
+
+        post_object = PostObject(
+            id=self.id,
+            text=text_str,
+            bluesky_username=bluesky_username_str,
+            links=self.links(),
+            link_card_title=link_card_title_str,
+            link_card_description=link_card_description_str,
+            is_link_card=self.is_link_card(),
+            image_urls_with_alts=self.image_urls_with_alts(),
+            reply_to=self.reply_to_int(),
+        )
+        return post_object
 
     @admin.display(description="")
     def name_emoji(self) -> str:
@@ -124,6 +180,27 @@ class Post(models.Model):
             return publish_flag
         else:
             return "❓"
+
+    @admin.display(description="Post Details")
+    def post_details(self) -> str:
+        post_object = self.post_object()
+
+        link_num = len(self.links())
+        image_num = len(post_object.image_urls_with_alts)
+
+        detail_items = []
+
+        if image_num:
+            detail_items.append(f"{DETAIL_EMOJIS['image']}{image_num}")
+        if link_num:
+            if self.is_link_card():
+                detail_items.append(DETAIL_EMOJIS["link_card"])
+            else:
+                detail_items.append(f"{DETAIL_EMOJIS['link']}{link_num}")
+        if self.reply_to_int():
+            detail_items.append(DETAIL_EMOJIS["reply"])
+
+        return ",".join(detail_items)
 
     def __str__(self):
         return f"{self.id}_{self.bluesky_username}_{self.text[:50]}"

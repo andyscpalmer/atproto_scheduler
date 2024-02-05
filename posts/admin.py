@@ -20,6 +20,7 @@ def set_publish(modeladmin, request, queryset):
 class PostAdmin(admin.ModelAdmin):
     list_display = [
         "post_snippet",
+        "post_details",
         "name_emoji",
         "bluesky_username",
         "posts_enabled",

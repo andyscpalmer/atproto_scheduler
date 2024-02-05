@@ -54,8 +54,7 @@ class AtprotoClient:
                     uri=reply_uri,
                 )
                 reply = models.AppBskyFeedPost.ReplyRef(
-                    parent=parent_ref,
-                    root=parent_ref
+                    parent=parent_ref, root=parent_ref
                 )
                 print(f"Reply object: {reply}")
             else:
