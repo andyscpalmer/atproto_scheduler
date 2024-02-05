@@ -116,5 +116,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # For the post scheduler
-SCHEDULER_INTERVAL = timedelta(seconds=10)
+SCHEDULER_INTERVAL = timedelta(seconds=5)
 TIME_ZONE = "America/New_York"
