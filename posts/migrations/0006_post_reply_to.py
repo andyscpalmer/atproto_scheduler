@@ -15,7 +15,10 @@ class Migration(migrations.Migration):
             model_name="post",
             name="reply_to",
             field=models.ForeignKey(
-                null=True, blank=True, on_delete=django.db.models.deletion.CASCADE, to="posts.post"
+                null=True,
+                blank=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="posts.post",
             ),
         ),
     ]
