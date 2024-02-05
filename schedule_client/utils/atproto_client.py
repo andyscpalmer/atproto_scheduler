@@ -2,6 +2,7 @@ import re
 import typing as t
 
 from atproto import Client, models
+from django.utils import timezone
 
 from schedule_client.utils.django_client import PostClient
 from schedule_client.utils.data_models import PostObject, AccountObject
@@ -20,9 +21,11 @@ class AtprotoClient:
             self.client.login(self.bluesky_username, self.bluesky_password)
             self.is_valid_login = True
             print("Successfully logged into Bluesky account.")
-        except:
-            print("Error logging into Bluesky account.")
+            self.atproto_time = self.client.get_current_time()
+        except Exception as e:
+            print(f"Error logging into Bluesky account:\n{e}")
             self.is_valid_login = False
+            raise
 
     def post_to_account(self, post: PostObject) -> bool:
         """Posts to Bluesky

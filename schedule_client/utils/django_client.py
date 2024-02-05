@@ -21,7 +21,7 @@ class PostClient:
     def clear_past_scheduled_times(self) -> None:
         """Remove scheduled times for unposted elements that are scheduled in the past"""
         past_scheduled_posts = self.non_draft_unpublished_posts.filter(
-            scheduled_post_time__lt=timezone.now()-SCHEDULER_INTERVAL
+            scheduled_post_time__lt=timezone.now()-9*SCHEDULER_INTERVAL
         ).all()
 
         for past_scheduled_post in past_scheduled_posts:
@@ -90,8 +90,8 @@ class PostClient:
             bluesky_username=account.bluesky_username
         )
 
-        schedule_window_begin = timezone.now() - SCHEDULER_INTERVAL
-        schedule_window_end = timezone.now() + SCHEDULER_INTERVAL
+        schedule_window_begin = timezone.now() - 10 * SCHEDULER_INTERVAL
+        schedule_window_end = timezone.now()
 
         posts_within_window = (
             account_filtered_posts.exclude(
