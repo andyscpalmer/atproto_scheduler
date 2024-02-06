@@ -18,7 +18,7 @@ At this early stage, there is no straightforward installation. However, [this gu
 
 The app will not run properly without the following:
 - A Bluesky account with an app password
-- An AWS S3 bucket with a folder `/images` for posting images
+- An AWS S3 bucket
 - Some form of hosting
 
 ### Environment Variables

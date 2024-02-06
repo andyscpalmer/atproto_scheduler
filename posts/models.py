@@ -1,11 +1,15 @@
 from datetime import timedelta
 
+from atproto import Client
 from django.contrib import admin
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from posts.utils.constants import PUBLISH_STATUS_EMOJIS, DETAIL_EMOJIS
 from posts.utils.helper_functions import get_name_emoji, get_name_with_animal_emoji
 from schedule_client.utils.data_models import PostObject
+from schedule_client.utils.s3 import ImageClient
 
 
 class Config(models.Model):
@@ -19,6 +23,17 @@ class Config(models.Model):
         verbose_name = "Bluesky User Configuration"
         verbose_name_plural = "Bluesky User Configurations"
         ordering = ["bluesky_username"]
+
+    def clean(self):
+        # Confirm valid Bluesky Credentials
+        atproto_client = Client()
+        try:
+            atproto_client.login(self.bluesky_username, self.app_password)
+            print("Login credentials confirmed.")
+        except Exception as e:
+            raise ValidationError(_(f"Error validating login credentials:\n{e}"))
+        finally:
+            del atproto_client
 
     @admin.display(description="Publishing Status")
     def publishing_status(self) -> str:
@@ -57,10 +72,10 @@ class Post(models.Model):
     link_2 = models.CharField(max_length=300, null=True, blank=True)
     link_3 = models.CharField(max_length=300, null=True, blank=True)
     link_4 = models.CharField(max_length=300, null=True, blank=True)
-    image_1 = models.CharField(max_length=200, null=True, blank=True)
-    image_2 = models.CharField(max_length=200, null=True, blank=True)
-    image_3 = models.CharField(max_length=200, null=True, blank=True)
-    image_4 = models.CharField(max_length=200, null=True, blank=True)
+    image_1 = models.ImageField(upload_to="images/%Y/%m/%d/", null=True, blank=True)
+    image_2 = models.ImageField(upload_to="images/%Y/%m/%d/", null=True, blank=True)
+    image_3 = models.ImageField(upload_to="images/%Y/%m/%d/", null=True, blank=True)
+    image_4 = models.ImageField(upload_to="images/%Y/%m/%d/", null=True, blank=True)
     alt_1 = models.TextField(max_length=500, null=True, blank=True)
     alt_2 = models.TextField(max_length=500, null=True, blank=True)
     alt_3 = models.TextField(max_length=500, null=True, blank=True)
@@ -95,6 +110,10 @@ class Post(models.Model):
             self.post_status = "✅ Published"
         else:
             self.post_status = f"⏳ Scheduled"
+
+        if self.reply_to and not self.bluesky_username:
+            self.bluesky_username = self.reply_to.bluesky_username
+
         super(Post, self).save(*args, **kwargs)
 
     def reply_to_int(self) -> bool:
@@ -107,18 +126,21 @@ class Post(models.Model):
         links_raw = [self.link_1, self.link_2, self.link_3, self.link_4]
         return [link for link in links_raw if link]
 
-    def images_raw(self) -> list[str]:
-        images_raw = [self.image_1, self.image_2, self.image_3, self.image_4]
-        return images_raw
+    def image_objects(self) -> list[models.ImageField]:
+        return [self.image_1, self.image_2, self.image_3, self.image_4]
+
+    def images(self) -> list[str]:
+        return [
+            image_object.name for image_object in self.image_objects() if image_object
+        ]
 
     def alt_texts_raw(self) -> list[str]:
         return [self.alt_1, self.alt_2, self.alt_3, self.alt_4]
 
     def image_urls_with_alts(self) -> list[dict]:
-        images = [image for image in self.images_raw() if image]
         image_urls_with_alts = [
-            {"image": images[i], "alt_text": self.alt_texts_raw()[i]}
-            for i in range(len(images))
+            {"image": self.images()[i], "alt_text": self.alt_texts_raw()[i]}
+            for i in range(len(self.images()))
         ]
         return image_urls_with_alts
 
