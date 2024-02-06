@@ -1,4 +1,11 @@
+from datetime import timedelta
+
+from django import forms
 from django.contrib import admin
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+
+# from posts.forms import BaseConfigForm, ConfigModelForm
 from posts.models import Post, Config
 
 
@@ -85,6 +92,28 @@ class PostAdmin(admin.ModelAdmin):
     actions = [set_draft, set_publish]
 
 
+def validate_interval(interval: timedelta):
+    if interval < timedelta(minutes=1):
+        raise ValidationError(_("Interval is too short"))
+
+
+class ConfigModelForm(forms.ModelForm):
+    class Meta:
+        model = Config
+        fields = ["bluesky_username", "app_password", "interval", "allow_posts"]
+        # exclude = ['allow_posts']
+
+    interval = forms.DurationField(validators=[validate_interval])
+
+    def clean_user_data(self):
+        data = self.cleaned_data["interval"]
+
+        if data < timedelta(minutes=1):
+            raise ValidationError(_("Interval too short"))
+
+        return data
+
+
 @admin.register(Config)
 class ConfigAdmin(admin.ModelAdmin):
     list_display = [
@@ -92,3 +121,4 @@ class ConfigAdmin(admin.ModelAdmin):
         "interval",
         "publishing_status",
     ]
+    form = ConfigModelForm

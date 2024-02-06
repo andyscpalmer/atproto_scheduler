@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "storages",
     # Local
     "posts.apps.PostsConfig",
 ]
@@ -115,6 +116,25 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Storage configurations
+# AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY")
+# AWS_S3_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+# AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
+# AWS_S3_FILE_OVERWRITE = True
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": os.getenv("AWS_BUCKET_NAME"),
+            "access_key": os.getenv("AWS_ACCESS_KEY"),
+            "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 # For the post scheduler
-SCHEDULER_INTERVAL = timedelta(seconds=5)
+SCHEDULER_INTERVAL = timedelta(seconds=10)
 TIME_ZONE = "America/New_York"

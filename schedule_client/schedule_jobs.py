@@ -1,3 +1,6 @@
+from datetime import datetime
+from threading import get_ident
+
 from schedule_client.utils.atproto_client import AtprotoClient
 from schedule_client.utils.data_models import AccountObject
 from schedule_client.utils.django_client import PostClient, ConfigClient
@@ -40,7 +43,7 @@ def handle_account_posts(post_client: PostClient, account: AccountObject) -> Non
                 )
                 if atproto_client.is_valid_login:
                     for scheduled_post in scheduled_posts:
-                        print(f"Posting: {scheduled_post.__str__}")
+                        print(f"{get_ident()}: Posting: {scheduled_post.__str__}")
                         atproto_client.post_to_account(scheduled_post)
             finally:
                 del atproto_client
