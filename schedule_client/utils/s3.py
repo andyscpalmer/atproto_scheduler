@@ -41,8 +41,12 @@ class ImageClient:
             return None
 
     def get_image_tag(self, s3_image_path: str) -> str:
-        image_bin = b64encode(self.get_image_object(s3_image_path)).decode("utf-8")
-        return f'<img src="data:image;base64,{image_bin}" style="height:300px"/>'
+        try:
+            image_bin = b64encode(self.get_image_object(s3_image_path)).decode("utf-8")
+            return f'<img src="data:image;base64,{image_bin}" style="height:300px"/>'
+        except Exception as err:
+            print(err)
+            return "(error retrieving image)"
 
     def confirm_image_object(self, s3_image_path: str) -> None:
         try:
