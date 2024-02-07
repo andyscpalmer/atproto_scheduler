@@ -1,8 +1,10 @@
+from base64 import b64encode
 import io
 import os
 
 import boto3
 import botocore
+from django.utils.safestring import mark_safe
 
 
 class ImageClient:
@@ -38,18 +40,16 @@ class ImageClient:
             print(err)
             return None
 
+    def get_image_tag(self, s3_image_path: str) -> str:
+        image_bin = b64encode(self.get_image_object(s3_image_path)).decode("utf-8")
+        return f'<img src="data:image;base64,{image_bin}" style="height:300px"/>'
+
     def confirm_image_object(self, s3_image_path: str) -> None:
         try:
             self.client.head_object(Bucket=self.BUCKET_NAME, Key=s3_image_path)
         except Exception as e:
             print(e)
             raise
-        # except botocore.exceptions.ClientError as e:
-        #     if e.response["Error"]["Code"] == "404":
-        #         print(f"Key: '{full_image_path}' does not exist.")
-        #     else:
-        #         print(f"Something else went wrong:\n{e}")
-        #     return False
 
     def close(self) -> None:
         self.client.close()

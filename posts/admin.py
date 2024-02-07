@@ -3,10 +3,12 @@ from datetime import timedelta
 from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 # from posts.forms import BaseConfigForm, ConfigModelForm
 from posts.models import Post, Config
+from schedule_client.utils.s3 import ImageClient
 
 
 @admin.action(
@@ -35,7 +37,15 @@ class PostAdmin(admin.ModelAdmin):
         "scheduled_post_time",
     ]
     list_filter = ["bluesky_username", "post_status", "scheduled_post_time"]
-    readonly_fields = ["error", "created_at", "updated_at"]
+    readonly_fields = [
+        "image_tag_1",
+        "image_tag_2",
+        "image_tag_3",
+        "image_tag_4",
+        "error",
+        "created_at",
+        "updated_at",
+    ]
     fieldsets = [
         (
             None,
@@ -67,10 +77,10 @@ class PostAdmin(admin.ModelAdmin):
             {
                 "classes": ["collapse", "extrapretty"],
                 "fields": [
-                    ("image_1", "alt_1"),
-                    ("image_2", "alt_2"),
-                    ("image_3", "alt_3"),
-                    ("image_4", "alt_4"),
+                    ("image_tag_1", "image_1", "alt_1"),
+                    ("image_tag_2", "image_2", "alt_2"),
+                    ("image_tag_3", "image_3", "alt_3"),
+                    ("image_tag_4", "image_4", "alt_4"),
                 ],
             },
         ),
@@ -91,6 +101,34 @@ class PostAdmin(admin.ModelAdmin):
     ]
     actions = [set_draft, set_publish]
 
+    def image_tag_1(self, obj):
+        if obj.image_1:
+            img_cli = ImageClient()
+            return mark_safe(img_cli.get_image_tag(obj.image_1.name))
+        else:
+            return "(no image)"
+
+    def image_tag_2(self, obj):
+        if obj.image_2:
+            img_cli = ImageClient()
+            return mark_safe(img_cli.get_image_tag(obj.image_2.name))
+        else:
+            return "(no image)"
+
+    def image_tag_3(self, obj):
+        if obj.image_3:
+            img_cli = ImageClient()
+            return mark_safe(img_cli.get_image_tag(obj.image_3.name))
+        else:
+            return "(no image)"
+
+    def image_tag_4(self, obj):
+        if obj.image_4:
+            img_cli = ImageClient()
+            return mark_safe(img_cli.get_image_tag(obj.image_4.name))
+        else:
+            return "(no image)"
+
 
 def validate_interval(interval: timedelta):
     if interval < timedelta(minutes=1):
@@ -101,7 +139,6 @@ class ConfigModelForm(forms.ModelForm):
     class Meta:
         model = Config
         fields = ["bluesky_username", "app_password", "interval", "allow_posts"]
-        # exclude = ['allow_posts']
 
     interval = forms.DurationField(validators=[validate_interval])
 
