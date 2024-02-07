@@ -136,5 +136,5 @@ STORAGES = {
 }
 
 # For the post scheduler
-SCHEDULER_INTERVAL = timedelta(seconds=10)
+SCHEDULER_INTERVAL = timedelta(seconds=20)
 TIME_ZONE = "America/New_York"
